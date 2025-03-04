@@ -2,7 +2,7 @@ import datetime
 import time
 from plyer import notification
 
-def verificar_validade(produto, validade, dias_aviso=90):
+def verificar_validade(produto, validade, dias_aviso=5):
     # Converte a string de validade para um objeto datetime
     validade_data = datetime.datetime.strptime(validade, "%d/%m/%Y")
     
@@ -10,7 +10,7 @@ def verificar_validade(produto, validade, dias_aviso=90):
     hoje = datetime.datetime.today()
     
     # Verifica se a validade está dentro do período de aviso
-    dias_restantes = (validade_data - hoje).days
+    dias_restantes = (validade_data - hoje).days  # Agora comparando dois objetos datetime
     if dias_restantes <= dias_aviso and dias_restantes > 0:
         # Envia uma notificação
         notification.notify(
