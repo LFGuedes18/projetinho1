@@ -1,38 +1,108 @@
 import datetime
 import time
 from plyer import notification
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.popup import Popup
 
-def verificar_validade(produto, validade, dias_aviso=5):
-    # Converte a string de validade para um objeto datetime
-    validade_data = datetime.datetime.strptime(validade, "%d/%m/%Y")
-    
-    # Data atual
+import datetime
+from plyer import notification
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.popup import Popup
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
+
+# Lista para armazenar os produtos e suas respectivas datas de validade
+produtos = []
+
+# Função para verificar a validade dos produtos e enviar notificações
+def verificar_validade(produtos, dias_aviso=90):
     hoje = datetime.datetime.today()
-    
-    # Verifica se a validade está dentro do período de aviso
-    dias_restantes = (validade_data - hoje).days  # Agora comparando dois objetos datetime
-    if dias_restantes <= dias_aviso and dias_restantes > 0:
-        # Envia uma notificação
-        notification.notify(
-            title=f"Aviso de validade: {produto}",
-            message=f"O produto {produto} está prestes a vencer em {dias_restantes} dias. Validade: {validade}",
-            timeout=10
-        )
-        print(f"Aviso: O produto {produto} está prestes a vencer!")
-    elif dias_restantes <= 0:
-        print(f"O produto {produto} já venceu!")
-    else:
-        print(f"O produto {produto} está válido ainda por {dias_restantes} dias.")
+    for produto, validade in produtos:
+        # Converte a validade para um objeto datetime
+        validade_data = datetime.datetime.strptime(validade, "%d/%m/%Y")
+        
+        # Verifica os dias restantes
+        dias_restantes = (validade_data - hoje).days
+        if dias_restantes <= dias_aviso and dias_restantes > 0:
+            # Envia uma notificação
+            notification.notify(
+                title=f"Aviso de validade: {produto}",
+                message=f"O produto {produto} está prestes a vencer em {dias_restantes} dias. Validade: {validade}",
+                timeout=10
+            )
+        elif dias_restantes <= 0:
+            print(f"O produto {produto} já venceu!")
+        else:
+            print(f"O produto {produto} está válido ainda por {dias_restantes} dias.")
 
-def main():
-    # Cadastro do produto e validade
-    produto = input("Digite o nome do produto: ")
-    validade = input("Digite a validade do produto (dd/mm/aaaa): ")
+class ValidadeApp(App):
+    def build(self):
+        self.layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        
+        # Layout para entrada de dados
+        self.produto_label = Label(text="Digite o nome do produto:")
+        self.layout.add_widget(self.produto_label)
+        
+        self.produto_input = TextInput(multiline=False)
+        self.layout.add_widget(self.produto_input)
+        
+        self.validade_label = Label(text="Digite a validade do produto (dd/mm/aaaa):")
+        self.layout.add_widget(self.validade_label)
+        
+        self.validade_input = TextInput(multiline=False)
+        self.layout.add_widget(self.validade_input)
+        
+        # Botão para adicionar produto
+        self.add_button = Button(text="Adicionar produto")
+        self.add_button.bind(on_press=self.adicionar_produto)
+        self.layout.add_widget(self.add_button)
+        
+        # Layout para exibir os produtos adicionados
+        self.produtos_layout = GridLayout(cols=1, size_hint_y=None)
+        self.produtos_layout.bind(minimum_height=self.produtos_layout.setter('height'))
+        self.scroll_view = ScrollView()
+        self.scroll_view.add_widget(self.produtos_layout)
+        self.layout.add_widget(self.scroll_view)
+        
+        # Botão para verificar validade
+        self.check_button = Button(text="Verificar validade dos produtos")
+        self.check_button.bind(on_press=self.verificar_produtos)
+        self.layout.add_widget(self.check_button)
 
-    # Loop que verifica a validade constantemente
-    while True:
-        verificar_validade(produto, validade)
-        time.sleep(86400)  # Verifica a cada 24 horas
+        return self.layout
+
+    def adicionar_produto(self, instance):
+        produto = self.produto_input.text
+        validade = self.validade_input.text
+        
+        # Adiciona o produto e sua validade à lista
+        if produto and validade:
+            produtos.append((produto, validade))
+            # Atualiza a lista de produtos exibida na interface
+            produto_label = Label(text=f"{produto} - {validade}")
+            self.produtos_layout.add_widget(produto_label)
+        
+            # Limpa os campos de entrada
+            self.produto_input.text = ""
+            self.validade_input.text = ""
+        else:
+            self.show_popup("Erro", "Por favor, preencha ambos os campos.")
+
+    def verificar_produtos(self, instance):
+        # Verifica a validade de todos os produtos cadastrados
+        verificar_validade(produtos)
+
+    def show_popup(self, title, message):
+        popup = Popup(title=title, content=Label(text=message), size_hint=(0.8, 0.3))
+        popup.open()
 
 if __name__ == "__main__":
-    main()
+    ValidadeApp().run()
